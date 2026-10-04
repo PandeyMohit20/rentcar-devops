@@ -14,11 +14,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout DevOps repository
+        uses: actions/checkout@v5
+        with:
+          path: rentcar-devops
+
+      - name: Checkout Backend repository
+        uses: actions/checkout@v5
+        with:
+          repository: PandeyMohit20/rentcar-backend
+          path: rentcar-backend
+
+      - name: Checkout Frontend repository
+        uses: actions/checkout@v5
+        with:
+          repository: PandeyMohit20/rentcar-frontend
+          path: rentcar-frontend
+
+      - name: Checkout Admin repository
+        uses: actions/checkout@v5
+        with:
+          repository: PandeyMohit20/rentcar-admin
+          path: rentcar-admin
 
       - name: Create CI environment file
         shell: bash
+        working-directory: rentcar-devops
         run: |
           cat > .env.docker <<'EOF'
           MYSQL_DATABASE=rentcar
@@ -56,13 +77,17 @@ jobs:
           EOF
 
       - name: Validate Docker Compose
+        working-directory: rentcar-devops
         run: docker compose --env-file .env.docker config
 
       - name: Build backend image
+        working-directory: rentcar-devops
         run: docker compose --env-file .env.docker build backend
 
       - name: Build frontend image
+        working-directory: rentcar-devops
         run: docker compose --env-file .env.docker build frontend
 
       - name: Build admin image
+        working-directory: rentcar-devops
         run: docker compose --env-file .env.docker build admin
