@@ -1,0 +1,71 @@
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: rentcar-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: rentcar
+      MYSQL_USER: rentcar
+      MYSQL_PASSWORD: rentcar_local_password
+      MYSQL_ROOT_PASSWORD: root_local_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - rentcar_mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-proot_local_password"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ../rentcar-backend
+      dockerfile: ../rentcar-devops/docker/backend/Dockerfile
+    container_name: rentcar-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: mysql://rentcar:rentcar_local_password@mysql:3306/rentcar
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../rentcar-frontend
+      dockerfile: ../rentcar-devops/docker/frontend/Dockerfile
+    container_name: rentcar-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+  admin:
+    build:
+      context: ../rentcar-admin
+      dockerfile: ../rentcar-devops/docker/admin/Dockerfile
+    container_name: rentcar-admin
+    restart: unless-stopped
+    ports:
+      - "5174:80"
+    depends_on:
+      - backend
+
+volumes:
+  rentcar_mysql_data:
