@@ -4,15 +4,19 @@ services:
     image: mysql:8.4
     container_name: rentcar-mysql
     restart: unless-stopped
+
     environment:
-      MYSQL_DATABASE: rentcar
-      MYSQL_USER: rentcar
-      MYSQL_PASSWORD: rentcar_local_password
-      MYSQL_ROOT_PASSWORD: root_local_password
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3307}:3306"
+
     volumes:
       - rentcar_mysql_data:/var/lib/mysql
+
     healthcheck:
       test:
         [
@@ -23,49 +27,100 @@ services:
           "localhost",
           "-u",
           "root",
-          "-proot_local_password"
+          "-p${MYSQL_ROOT_PASSWORD}"
         ]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 10s
 
   backend:
     build:
       context: ../rentcar-backend
       dockerfile: ../rentcar-devops/docker/backend/Dockerfile
+
     container_name: rentcar-backend
     restart: unless-stopped
+
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 5000
-      DATABASE_URL: mysql://rentcar:rentcar_local_password@mysql:3306/rentcar
+      API_PREFIX: /api/v1
+
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+
+      CORS_ORIGIN: ${CORS_ORIGIN}
+
+      LOG_LEVEL: ${LOG_LEVEL}
+
+      COOKIE_SECURE: ${COOKIE_SECURE}
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+
+      QUOTE_TTL_MINUTES: ${QUOTE_TTL_MINUTES}
+      QUOTE_SIGNING_SECRET: ${QUOTE_SIGNING_SECRET}
+      BOOKING_HOLD_TTL_MINUTES: ${BOOKING_HOLD_TTL_MINUTES}
+
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET}
+
+      PAYOUT_DESTINATION_ENCRYPTION_KEY: ${PAYOUT_DESTINATION_ENCRYPTION_KEY}
+
     ports:
-      - "5000:5000"
+      - "${BACKEND_PORT}:5000"
+
     depends_on:
       mysql:
         condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "scripts/health.js"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   frontend:
     build:
       context: ../rentcar-frontend
       dockerfile: ../rentcar-devops/docker/frontend/Dockerfile
+
     container_name: rentcar-frontend
     restart: unless-stopped
+
     ports:
-      - "5173:80"
+      - "${FRONTEND_PORT}:80"
+
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   admin:
     build:
       context: ../rentcar-admin
       dockerfile: ../rentcar-devops/docker/admin/Dockerfile
+
     container_name: rentcar-admin
     restart: unless-stopped
+
     ports:
-      - "5174:80"
+      - "${ADMIN_PORT}:80"
+
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   rentcar_mysql_data:

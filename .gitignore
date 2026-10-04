@@ -1,0 +1,24 @@
+.env
+.env.*
+!.env.docker.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Local files
+tmp/
+temp/
+
+# Docker local backups
+docker-compose*.backup
+docker-compose*.bak

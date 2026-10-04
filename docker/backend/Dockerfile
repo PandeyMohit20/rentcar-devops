@@ -4,13 +4,19 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY package*.json ./
 
-RUN npm ci --omit=dev
+RUN npm ci
 
 COPY prisma ./prisma
 
 RUN npx prisma generate
+
+RUN npm prune --omit=dev
 
 COPY src ./src
 COPY scripts ./scripts
