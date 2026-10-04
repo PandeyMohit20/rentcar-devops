@@ -17,26 +17,37 @@ jobs:
       - name: Checkout DevOps repository
         uses: actions/checkout@v5
         with:
-          repository: PandeyMohit20/rentcar-devops
           path: rentcar-devops
 
       - name: Checkout Backend repository
-        uses: actions/checkout@v5
-        with:
-          repository: PandeyMohit20/rentcar-backend
-          path: rentcar-backend
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/PandeyMohit20/rentcar-backend.git rentcar-backend
 
       - name: Checkout Frontend repository
-        uses: actions/checkout@v5
-        with:
-          repository: PandeyMohit20/rentcar-frontend
-          path: rentcar-frontend
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/PandeyMohit20/rentcar-frontend.git rentcar-frontend
 
       - name: Checkout Admin repository
-        uses: actions/checkout@v5
-        with:
-          repository: PandeyMohit20/rentcar-admin
-          path: rentcar-admin
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/PandeyMohit20/rentcar-admin.git rentcar-admin
+
+      - name: Verify repository structure
+        shell: bash
+        run: |
+          echo "Workspace:"
+          pwd
+          echo
+          echo "Repositories:"
+          ls -la
+          echo
+          test -f rentcar-devops/docker-compose.yml
+          test -f rentcar-backend/package.json
+          test -f rentcar-frontend/package.json
+          test -f rentcar-admin/package.json
+          echo "Repository structure verified."
 
       - name: Create CI environment file
         shell: bash
