@@ -1,0 +1,68 @@
+name: RentCar DevOps CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docker-build:
+    name: Validate and build Docker images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create CI environment file
+        shell: bash
+        run: |
+          cat > .env.docker <<'EOF'
+          MYSQL_DATABASE=rentcar
+          MYSQL_USER=rentcar
+          MYSQL_PASSWORD=ci_local_password
+          MYSQL_ROOT_PASSWORD=ci_root_password
+
+          BACKEND_PORT=5000
+          FRONTEND_PORT=5173
+          ADMIN_PORT=5174
+
+          JWT_ACCESS_SECRET=ci_access_secret
+          JWT_REFRESH_SECRET=ci_refresh_secret
+          JWT_ACCESS_EXPIRES_IN=15m
+          JWT_REFRESH_EXPIRES_IN=7d
+
+          CORS_ORIGIN=http://localhost:5173,http://localhost:5174
+
+          LOG_LEVEL=info
+
+          COOKIE_SECURE=false
+          COOKIE_SAME_SITE=lax
+          COOKIE_DOMAIN=
+
+          QUOTE_TTL_MINUTES=10
+          QUOTE_SIGNING_SECRET=ci_quote_signing_secret
+          BOOKING_HOLD_TTL_MINUTES=15
+
+          PAYMENT_PROVIDER=razorpay
+          RAZORPAY_KEY_ID=
+          RAZORPAY_KEY_SECRET=
+          RAZORPAY_WEBHOOK_SECRET=
+
+          PAYOUT_DESTINATION_ENCRYPTION_KEY=
+          EOF
+
+      - name: Validate Docker Compose
+        run: docker compose --env-file .env.docker config
+
+      - name: Build backend image
+        run: docker compose --env-file .env.docker build backend
+
+      - name: Build frontend image
+        run: docker compose --env-file .env.docker build frontend
+
+      - name: Build admin image
+        run: docker compose --env-file .env.docker build admin
