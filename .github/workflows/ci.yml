@@ -8,46 +8,95 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   docker-build:
     name: Validate and build Docker images
     runs-on: ubuntu-latest
 
     steps:
+      # ============================================================
+      # DEVOPS REPOSITORY
+      # ============================================================
+
       - name: Checkout DevOps repository
         uses: actions/checkout@v5
         with:
           path: rentcar-devops
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 1
+
+      # ============================================================
+      # BACKEND REPOSITORY
+      # ============================================================
 
       - name: Checkout Backend repository
-        shell: bash
-        run: |
-          git clone --depth 1 https://github.com/PandeyMohit20/rentcar-backend.git rentcar-backend
+        uses: actions/checkout@v5
+        with:
+          repository: PandeyMohit20/rentcar-backend
+          path: rentcar-backend
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 1
+
+      # ============================================================
+      # FRONTEND REPOSITORY
+      # ============================================================
 
       - name: Checkout Frontend repository
-        shell: bash
-        run: |
-          git clone --depth 1 https://github.com/PandeyMohit20/rentcar-frontend.git rentcar-frontend
+        uses: actions/checkout@v5
+        with:
+          repository: PandeyMohit20/rentcar-frontend
+          path: rentcar-frontend
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 1
+
+      # ============================================================
+      # ADMIN REPOSITORY
+      # ============================================================
 
       - name: Checkout Admin repository
-        shell: bash
-        run: |
-          git clone --depth 1 https://github.com/PandeyMohit20/rentcar-admin.git rentcar-admin
+        uses: actions/checkout@v5
+        with:
+          repository: PandeyMohit20/rentcar-admin
+          path: rentcar-admin
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 1
+
+      # ============================================================
+      # VERIFY STRUCTURE
+      # ============================================================
 
       - name: Verify repository structure
         shell: bash
         run: |
           echo "Workspace:"
           pwd
+
           echo
           echo "Repositories:"
           ls -la
+
           echo
+          echo "DevOps:"
           test -f rentcar-devops/docker-compose.yml
+
+          echo "Backend:"
           test -f rentcar-backend/package.json
+
+          echo "Frontend:"
           test -f rentcar-frontend/package.json
+
+          echo "Admin:"
           test -f rentcar-admin/package.json
-          echo "Repository structure verified."
+
+          echo
+          echo "Repository structure verified successfully."
+
+      # ============================================================
+      # CI ENVIRONMENT
+      # ============================================================
 
       - name: Create CI environment file
         shell: bash
@@ -88,18 +137,30 @@ jobs:
           PAYOUT_DESTINATION_ENCRYPTION_KEY=
           EOF
 
+      # ============================================================
+      # COMPOSE VALIDATION
+      # ============================================================
+
       - name: Validate Docker Compose
         working-directory: rentcar-devops
-        run: docker compose --env-file .env.docker config
+        run: |
+          docker compose --env-file .env.docker config
+
+      # ============================================================
+      # DOCKER BUILDS
+      # ============================================================
 
       - name: Build backend image
         working-directory: rentcar-devops
-        run: docker compose --env-file .env.docker build backend
+        run: |
+          docker compose --env-file .env.docker build backend
 
       - name: Build frontend image
         working-directory: rentcar-devops
-        run: docker compose --env-file .env.docker build frontend
+        run: |
+          docker compose --env-file .env.docker build frontend
 
       - name: Build admin image
         working-directory: rentcar-devops
-        run: docker compose --env-file .env.docker build admin
+        run: |
+          docker compose --env-file .env.docker build admin
